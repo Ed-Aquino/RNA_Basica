@@ -1,4 +1,4 @@
-# %load network.py
+    # %load network.py
 
 """
 network.py
@@ -15,6 +15,7 @@ and omits many desirable features.
 #### Libraries
 # Standard library
 import random
+import math 
 
 # Third-party libraries
 import numpy as np
@@ -79,16 +80,29 @@ class Network(object):
         gradient descent using backpropagation to a single mini batch.
         The ``mini_batch`` is a list of tuples ``(x, y)``, and ``eta``
         is the learning rate."""
+        rho = 0.9
+        epsilon = 1e-7
+        Eg_w = None
+        Eg_b = None
+
         nabla_b = [np.zeros(b.shape) for b in self.biases]
         nabla_w = [np.zeros(w.shape) for w in self.weights]
+        if Eg_w is None:
+            Eg_w = [np.zeros(w.shape) for w in self.weights]
+        if Eg_b is None:
+            Eg_b = [np.zeros(b.shape) for b in self.biases]
         for x, y in mini_batch:
             delta_nabla_b, delta_nabla_w = self.backprop(x, y)
             nabla_b = [nb+dnb for nb, dnb in zip(nabla_b, delta_nabla_b)]
             nabla_w = [nw+dnw for nw, dnw in zip(nabla_w, delta_nabla_w)]
-        self.weights = [w-(eta/len(mini_batch))*nw
-                        for w, nw in zip(self.weights, nabla_w)]
-        self.biases = [b-(eta/len(mini_batch))*nb
-                       for b, nb in zip(self.biases, nabla_b)]
+            Eg_w = [rho * Ew + (1-rho)*nw**2 for Ew, nw in zip(Eg_w, nabla_w)]
+            Eg_b = [rho * Eb + (1-rho)*nb**2 for Eb, nb in zip(Eg_b, nabla_b)]
+
+        self.weights = [w-eta * nw/np.sqrt(Eg_w + epsilon)
+                        for w, nw, Eg_w in zip(self.weights, nabla_w, Eg_w)]
+        self.biases = [b-eta * nb/np.sqrt(Eg_b + epsilon)
+                       for b, nb, Eg_b in zip(self.biases, nabla_b, Eg_b)]
+
 
     def backprop(self, x, y):
         """Return a tuple ``(nabla_b, nabla_w)`` representing the
